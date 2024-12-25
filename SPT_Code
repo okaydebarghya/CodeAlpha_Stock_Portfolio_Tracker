@@ -1,0 +1,89 @@
+import requests
+
+class StockPortfolio:
+    def __init__(self):
+        self.portfolio = {}
+        self.api_key = "YOUR_API_KEY"  # Replace with your financial API key
+        self.base_url = "https://www.alphavantage.co/query"
+
+    def add_stock(self, symbol, shares, purchase_price):
+        if symbol in self.portfolio:
+            print(f"{symbol} is already in your portfolio. Updating the shares.")
+            self.portfolio[symbol]['shares'] += shares
+        else:
+            self.portfolio[symbol] = {'shares': shares, 'purchase_price': purchase_price}
+        print(f"Added {shares} shares of {symbol} to your portfolio.")
+
+    def remove_stock(self, symbol):
+        if symbol in self.portfolio:
+            del self.portfolio[symbol]
+            print(f"Removed {symbol} from your portfolio.")
+        else:
+            print(f"{symbol} is not in your portfolio.")
+
+    def get_real_time_price(self, symbol):
+        params = {
+            "function": "GLOBAL_QUOTE",
+            "symbol": symbol,
+            "apikey": self.api_key
+        }
+        response = requests.get(self.base_url, params=params)
+        data = response.json()
+        if "Global Quote" in data:
+            return float(data["Global Quote"]["05. price"])
+        else:
+            print(f"Error fetching data for {symbol}.")
+            return None
+
+    def display_portfolio(self):
+        if not self.portfolio:
+            print("Your portfolio is empty.")
+            return
+
+        print("\nYour Portfolio:")
+        print("Symbol\tShares\tPurchase Price\tCurrent Price\tPerformance")
+        total_investment = 0
+        total_value = 0
+
+        for symbol, details in self.portfolio.items():
+            current_price = self.get_real_time_price(symbol)
+            if current_price is None:
+                continue
+
+            shares = details['shares']
+            purchase_price = details['purchase_price']
+            investment = shares * purchase_price
+            current_value = shares * current_price
+            performance = current_value - investment
+
+            total_investment += investment
+            total_value += current_value
+
+            print(f"{symbol}\t{shares}\t{purchase_price:.2f}\t\t{current_price:.2f}\t\t{performance:.2f}")
+
+        print(f"\nTotal Investment: ${total_investment:.2f}")
+        print(f"Total Value: ${total_value:.2f}")
+        print(f"Total Performance: ${total_value - total_investment:.2f}")
+
+# Example Usage1
+
+portfolio = StockPortfolio()
+while True:
+    print("\n1. Add Stock\n2. Remove Stock\n3. Display Portfolio\n4. Exit")
+    choice = input("Choose an option: ")
+
+    if choice == "1":
+        symbol = input("Enter stock symbol: ").upper()
+        shares = int(input("Enter number of shares: "))
+        purchase_price = float(input("Enter purchase price per share: "))
+        portfolio.add_stock(symbol, shares, purchase_price)
+    elif choice == "2":
+        symbol = input("Enter stock symbol to remove: ").upper()
+        portfolio.remove_stock(symbol)
+    elif choice == "3":
+        portfolio.display_portfolio()
+    elif choice == "4":
+        print("Exiting...")
+        break
+    else:
+        print("Invalid option. Please try again.")
